@@ -2,34 +2,38 @@
 import sys, tempfile, os
 import datetime
 from subprocess import call
+import argparse
 
-print "hello world"
+parser = argparse.ArgumentParser()
+group = parser.add_mutually_exclusive_group()
+group.add_argument('--open', '-o', action='store', dest='open',
+                   help='open a journal entry for a given day')
+group.add_argument('--recent', '-r', nargs='?', action='store', dest='recent', const=10, type=int,
+                   help='display recent journal entries, defaults to 10')
 
-EDITOR = os.environ.get('EDITOR','vim') #that easy!
+args = parser.parse_args()
 
-initial_message = "" # if you want to set up the file somehow
+def hello_world(stron):
+    print str(stron)
 
-now = datetime.datetime.now()
+# Create a journal entry for the current day or
+# edit today's entry if it already exists
+def entry_for_today():
+    EDITOR = os.environ.get('EDITOR','vim') #that easy!
+    now = datetime.datetime.now()
 
-directory = "entries/%d/%s/" % (now.year, now.strftime("%B"))
-if not os.path.exists(directory):
-    os.makedirs(directory)
-filename = "%s%d.txt" % (directory, now.day)
+    directory = "entries/%d/%s/" % (now.year, now.strftime("%B"))
+    if not os.path.exists(directory):
+        os.makedirs(directory)
+    filename = "%s%d.txt" % (directory, now.day)
 
-print filename
+    call([EDITOR, filename])
 
-entry_for_today = open(filename,'w')
+if args.open:
+    hello_world(args.open)
+elif args.recent:
+    hello_world(args.recent)
+else:
+    entry_for_today()
 
-with tempfile.NamedTemporaryFile(suffix=".tmp") as tempfile:
-    tempfile.write(initial_message)
-    tempfile.flush()
-    call([EDITOR, tempfile.name])
-    # do the parsing with `tempfile` using regular File operations
 
-    with open(tempfile.name, 'r') as tf:
-        # save tempfile as journal entry
-        for line in tf.readlines():
-            sys.stdout.write(line)
-            entry_for_today.write(line)
-
-    entry_for_today.close()
